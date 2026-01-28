@@ -3,9 +3,9 @@ GXR 是一個為 2026 年 Web 開發設計的高性能全棧框架。它完美�
 
 
 ## 🚀 技術棧組成
-* [G] [Goravel](https://www.goravel.dev/): 基於 Go 語言的高生產力開發框架。受 Laravel 啟發，提供強大的 ORM、資料遷移（Migration）、認證與任務排程，並保有編譯型語言的極致速度。
-* [X] [Remix (React Router 7+)](https://remix.run/): 現代前端路由引擎。利用 Web 標準與巢狀路由（Nested Routes），徹底消除加載狀態（Loading States）並提供卓越的 SEO 表現。
-* [R] [Radix UI](https://www.radix-ui.com/): 開源的無標題（Headless）UI 元件庫。專注於處理複雜的無障礙訪問（WAI-ARIA）與鍵盤操作邏輯，讓你擁有 100% 的樣式掌控權。
+* [G] **[Goravel](https://www.goravel.dev/)**: 基於 Go 語言的高生產力開發框架。受 Laravel 啟發，提供強大的 ORM、資料遷移（Migration）、認證與任務排程，並保有編譯型語言的極致速度。
+* [X] **[Remix (React Router 7+)](https://remix.run/)**: 現代前端路由引擎。利用 Web 標準與巢狀路由（Nested Routes），徹底消除加載狀態（Loading States）並提供卓越的 SEO 表現。
+* [R] **[Radix UI](https://www.radix-ui.com/)**: 開源的無標題（Headless）UI 元件庫。專注於處理複雜的無障礙訪問（WAI-ARIA）與鍵盤操作邏輯，讓你擁有 100% 的樣式掌控權。
 
 ## ✨ 核心優勢
 * 極致效能：利用 Goravel 的 Go 核心確保微秒級的 API 回應時間，結合 Remix 的邊緣運算（Edge-ready）運行環境，大幅提升加載速度。
