@@ -1,0 +1,57 @@
+# Stage 1: Build
+# FROM golang:1.23-alpine AS builder
+# RUN apk add --no-cache git
+# WORKDIR /app
+# COPY src/backend/ ./
+# RUN go mod tidy && go mod download
+# RUN CGO_ENABLED=0 GOOS=linux go build -p 2 -o main .
+
+# # Stage 2: Production
+# FROM alpine:latest
+# RUN apk --no-cache add ca-certificates tzdata
+# WORKDIR /root/
+# COPY --from=builder /app/main .
+# COPY --from=builder /app/email_templates ./email_templates
+# COPY --from=builder /app/config ./config
+# EXPOSE 3881
+# CMD ["./main"]
+
+
+# Stage 1: Build
+FROM golang:1.23-alpine AS builder
+
+# 安裝構建必備工具
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# --- 優化 1：利用 Docker 層快取 (Layer Caching) ---
+# 先複製 mod 檔案，只有在 go.mod 或 go.sum 變動時才重新下載依賴
+COPY src/backend/go.mod src/backend/go.sum ./
+RUN go mod download
+
+# --- 優化 2：減少掃描範圍 ---
+# 只有在依賴下載完後，才複製源碼
+COPY src/backend/ ./
+
+# --- 優化 3：加速編譯 ---
+# -p 2 在強大主機上反而可能限制速度，建議讓 Go 自動決定 (預設為 CPU 核心數)
+# 加上 -ldflags="-s -w" 可以縮小二進位檔體積，加快 Stage 2 的拷貝速度
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
+
+# Stage 2: Production
+FROM alpine:3.21
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /root/
+
+# 僅複製運行所需的檔案
+COPY --from=builder /app/main .
+COPY --from=builder /app/email_templates ./email_templates
+COPY --from=builder /app/config ./config
+
+# 設置時區（Fiber 處理時間戳常用）
+ENV TZ=Asia/Taipei
+
+EXPOSE 3881
+CMD ["./main"]

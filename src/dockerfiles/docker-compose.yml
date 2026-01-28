@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile.backend
+    container_name: meta_backend
+    restart: unless-stopped
+    volumes:
+      - ../src/backend/.env:/root/.env:ro
+    ports:
+      - "3881:3881"
+    networks:
+      - meta_net
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile.frontend
+    container_name: meta_frontend
+    restart: unless-stopped
+    environment:
+      - NUXT_ENV_STAGE=test
+      - NUXT_PUBLIC_API_BASE=http://172.21.65.248:3881
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - meta_net
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"   # NPM UI
+      - "443:443"
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - meta_net
+
+volumes:
+  npm_data:
+  npm_letsencrypt:
+
+networks:
+  meta_net:
+    driver: bridge

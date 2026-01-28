@@ -1,0 +1,55 @@
+# Stage 1: Build
+# FROM node:20-alpine AS builder
+# WORKDIR /app
+# COPY src/frontend/package*.json ./
+# RUN npm install -g pnpm && pnpm install
+# COPY src/frontend/ ./
+# RUN NODE_OPTIONS="--max-old-space-size=1536" pnpm build
+
+# Stage 2: Production
+# FROM node:20-alpine AS runner
+# WORKDIR /app
+# COPY --from=builder /app/.output ./.output
+# EXPOSE 3000
+#CMD ["node", ".output/server/index.mjs"]
+
+# 使用更具體的版本，並開啟 BuildKit 支援
+FROM node:20-alpine AS builder
+
+# 安裝 pnpm 並設置環境變數
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# --- 關鍵優化 1：緩存依賴層 ---
+# 確保只有 package.json 變動時才執行安裝
+COPY src/frontend/package.json src/frontend/pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+# --- 關鍵優化 2：減少拷貝負擔 ---
+# 確保專案根目錄有 .dockerignore 排除 node_modules
+COPY src/frontend/ ./
+
+# --- 關鍵優化 3：Nuxt 4.2.2 構建優化 ---
+# 增加記憶體限制，避免 Vite 崩潰，並停用遙測
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NUXT_TELEMETRY_DISABLED=1
+
+# 利用快取掛載加速 Nitro 構建
+RUN --mount=type=cache,target=/app/.nuxt/cache \
+    pnpm build
+
+# Stage 2: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# 僅複製必要的輸出檔案
+COPY --from=builder /app/.output ./.output
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+# Nuxt 4 預設啟動腳本
+CMD ["node", ".output/server/index.mjs"]
